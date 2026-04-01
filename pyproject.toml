@@ -1,0 +1,21 @@
+[project]
+name = "price-extraction-cli"
+version = "0.1.0"
+description = "Extract product prices from images using local LLM (llama.cpp)"
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+    "loguru",
+    "openai",
+    "pydantic",
+    "watchdog",
+    "click"
+]
+
+[dependency-groups]
+# optional but useful
+dev-dependencies = [
+    "ipython",
+    "black",
+]
