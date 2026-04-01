@@ -1,5 +1,5 @@
 """
-Pretty-print price extraction results as a table with box-drawing characters.
+Pretty-print quantity extraction results as a table with box-drawing characters.
 """
 
 from pathlib import Path
@@ -9,30 +9,28 @@ import click
 
 
 def print_results_table(results: List[Dict]) -> None:
-    """Print price extraction results as a formatted table."""
+    """Print quantity extraction results as a formatted table."""
 
     if not results:
         click.echo("No results to display.")
         return
 
-    # 🔥 Updated headers
-    headers = ["File", "Item", "Price", "Currency"]
+    headers = ["File", "Item Name", "Quantity", "Unit"]
 
     # 🔁 Build rows
     rows = [
         [
             Path(r["file_path"]).name,
-            str(r.get("item", "")),
-            str(r.get("price", "")),
-            str(r.get("currency", "")),
+            str(r.get("item_name", "")),
+            str(r.get("quantity", "")),
+            str(r.get("unit", "")),
         ]
         for r in results
     ]
 
     # 🔹 Column widths
     col_widths = [
-        max(len(h), *(len(row[i]) for row in rows))
-        for i, h in enumerate(headers)
+        max(len(h), *(len(row[i]) for row in rows)) for i, h in enumerate(headers)
     ]
 
     def fmt_row(row: List[str]) -> str:

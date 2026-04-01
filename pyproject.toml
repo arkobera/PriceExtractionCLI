@@ -1,7 +1,7 @@
 [project]
-name = "price-extraction-cli"
+name = "quantity-extraction-cli"
 version = "0.1.0"
-description = "Extract product prices from images using local LLM (llama.cpp)"
+description = "Extract product quantities from images using local LLM (llama.cpp)"
 readme = "README.md"
 requires-python = ">=3.10"
 

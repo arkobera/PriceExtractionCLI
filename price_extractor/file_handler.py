@@ -1,5 +1,5 @@
 """
-File handler for processing product price images in a watched directory.
+File handler for processing product quantity images in a watched directory.
 """
 
 import csv
@@ -11,7 +11,7 @@ from typing import Any, List
 from loguru import logger
 from watchdog.events import FileSystemEventHandler
 
-from price_extractor.extractor import PriceItem, PriceExtractor
+from price_extractor.extractor import QuantityItem, QuantityExtractor
 
 # Supported image extensions
 IMAGE_EXTENSIONS = {
@@ -24,21 +24,20 @@ IMAGE_EXTENSIONS = {
     ".webp",
 }
 
-# 🔥 Updated CSV columns (multi-item support)
-CSV_COLUMNS = ["processed_at", "file_path", "item", "price", "currency"]
+CSV_COLUMNS = ["processed_at", "file_path", "item_name", "quantity", "unit"]
 
 
 def process_image(
-    extractor: PriceExtractor, image_path: str
+    extractor: QuantityExtractor, image_path: str
 ) -> List[dict[str, Any]] | None:
-    """Process a single image and return extracted price data as list of dicts."""
+    """Process a single image and return extracted quantity data as list of dicts."""
     try:
         logger.info(f"Processing image: {image_path}")
 
-        items: List[PriceItem] | None = extractor.extract(image_path)
+        items: List[QuantityItem] | None = extractor.extract(image_path)
 
         if not items:
-            logger.warning(f"No price data extracted from {image_path}")
+            logger.warning(f"No quantity data extracted from {image_path}")
             return None
 
         results = []
@@ -61,7 +60,7 @@ def process_image(
 
 
 def append_to_csv(output_file: str, data_list: List[dict[str, Any]]):
-    """Append multiple extracted price items to a CSV file."""
+    """Append multiple extracted quantity items to a CSV file."""
     try:
         logger.info(f"Appending data to CSV: {output_file}")
 
@@ -83,10 +82,10 @@ def append_to_csv(output_file: str, data_list: List[dict[str, Any]]):
         logger.error(f"Error writing to CSV {output_file}: {e}")
 
 
-class PriceFileHandler(FileSystemEventHandler):
-    """Handles file system events for new images containing price data."""
+class QuantityFileHandler(FileSystemEventHandler):
+    """Handles file system events for new images containing quantity data."""
 
-    def __init__(self, extractor: PriceExtractor, output_file: str):
+    def __init__(self, extractor: QuantityExtractor, output_file: str):
         self.extractor = extractor
         self.output_file = output_file
         self.processed_files: set[str] = set()
@@ -119,7 +118,7 @@ class PriceFileHandler(FileSystemEventHandler):
 
         for item in results:
             logger.info(
-                f"{image_path}: {item['item']} - {item['price']} {item['currency']}"
+                f"{image_path}: {item['item_name']} - {item['quantity']} {item['unit']}"
             )
 
     def process_image(self, image_path: str):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Price extraction tool that processes images using a Vision Language Model.
+Quantity extraction tool that processes images using a Vision Language Model.
 """
 
 from pathlib import Path
@@ -12,11 +12,11 @@ from watchdog.observers import Observer
 
 from price_extractor.file_handler import (
     IMAGE_EXTENSIONS,
-    PriceFileHandler,
+    QuantityFileHandler,
     append_to_csv,
     process_image,
 )
-from price_extractor.extractor import PriceExtractor
+from price_extractor.extractor import QuantityExtractor
 from price_extractor.llama_server import (
     DEFAULT_PORT,
     start_llama_server,
@@ -54,25 +54,25 @@ def collect_image_paths(paths: tuple[str, ...]) -> list[Path]:
 
 @click.group()
 def cli():
-    """Price extraction tool using local LLM."""
+    """Quantity extraction tool using local LLM."""
 
 
 # -------------------------
-# WATCH MODE (FIXED)
+# WATCH MODE
 # -------------------------
 @cli.command()
 @click.option("--dir", required=True, type=click.Path(exists=True, path_type=Path))
 @click.option("--model", required=True)
 @click.option("--port", default=DEFAULT_PORT, type=int)
 def watch(dir: Path, model: str, port: int):
-    """Watch a directory and process new images."""
+    """Watch a directory and process new images for quantities."""
 
     logger.info(f"Watching directory: {dir}")
 
     base_url = f"http://127.0.0.1:{port}/v1"
-    extractor = PriceExtractor(model, base_url=base_url)
+    extractor = QuantityExtractor(model, base_url=base_url)
 
-    handler = PriceFileHandler(extractor, str(dir / "prices.csv"))
+    handler = QuantityFileHandler(extractor, str(dir / "quantities.csv"))
 
     observer = Observer()
     observer.schedule(handler, str(dir), recursive=True)
@@ -88,7 +88,7 @@ def watch(dir: Path, model: str, port: int):
 
 
 # -------------------------
-# PROCESS MODE (FIXED)
+# PROCESS MODE
 # -------------------------
 @cli.command()
 @click.option("--model", required=True)
@@ -96,7 +96,7 @@ def watch(dir: Path, model: str, port: int):
 @click.option("--port", default=DEFAULT_PORT, type=int)
 @click.argument("paths", nargs=-1, required=True)
 def process(model: str, output: Path | None, port: int, paths: tuple[str, ...]):
-    """Process images and extract prices."""
+    """Process images and extract quantities."""
 
     image_paths = collect_image_paths(paths)
 
@@ -107,12 +107,12 @@ def process(model: str, output: Path | None, port: int, paths: tuple[str, ...]):
     logger.info(f"Found {len(image_paths)} images")
 
     base_url = f"http://127.0.0.1:{port}/v1"
-    extractor = PriceExtractor(model, base_url=base_url)
+    extractor = QuantityExtractor(model, base_url=base_url)
 
     results = []
 
     for image_path in image_paths:
-        print("👉 Processing:", image_path)
+        print("Processing:", image_path)
 
         items = process_image(extractor, str(image_path))
 

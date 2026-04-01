@@ -1,5 +1,5 @@
 """
-Price extraction module for extracting product prices from images.
+Quantity extraction module for extracting item quantities from images.
 """
 
 import base64
@@ -9,28 +9,23 @@ from typing import List, Optional
 from loguru import logger
 from openai import OpenAI
 from pydantic import BaseModel, ValidationError
-import json 
-import re
+import json
 
-def clean_price(price_str: str) -> float:
-    # Remove symbols like $, ₹, commas
-    cleaned = re.sub(r"[^\d.]", "", price_str)
-    return float(cleaned) if cleaned else 0.0
 
 # 🔹 Schema for single item
-class PriceItem(BaseModel):
-    item: str
-    price: float
-    currency: Optional[str] = 'INR'
+class QuantityItem(BaseModel):
+    item_name: str
+    quantity: float
+    unit: str
 
 
 # 🔹 Schema for multiple items
-class PriceResponse(BaseModel):
-    items: List[PriceItem]
+class QuantityResponse(BaseModel):
+    items: List[QuantityItem]
 
 
-class PriceExtractor:
-    """Handles image processing and price extraction."""
+class QuantityExtractor:
+    """Handles image processing and quantity extraction."""
 
     def __init__(
         self,
@@ -40,9 +35,8 @@ class PriceExtractor:
         self.model = model
         self.client = OpenAI(base_url=base_url, api_key="not-needed")
 
-    def extract(self, image_path: str) -> List[PriceItem] | None:
-        # print("🔥 EXTRACT FUNCTION CALLED")
-        """Extract price data from an image."""
+    def extract(self, image_path: str) -> List[QuantityItem] | None:
+        """Extract quantity data from an image."""
         try:
             # 🔹 Read image
             with open(image_path, "rb") as f:
@@ -51,26 +45,26 @@ class PriceExtractor:
             b64 = base64.b64encode(image_bytes).decode("utf-8")
             mime_type = mimetypes.guess_type(image_path)[0] or "image/png"
 
-            # 🔥 Improved prompt
             prompt = (
-    "You are an AI that extracts structured data.\n\n"
-    "From this image, extract ALL visible product prices.\n\n"
-    "Return ONLY valid JSON in this EXACT format:\n\n"
-    "{\n"
-    '  "items": [\n'
-    "    {\n"
-    '      "item": "string",\n'
-    '      "price": number,\n'
-    '      "currency": "INR"\n'
-    "    }\n"
-    "  ]\n"
-    "}\n\n"
-    "Rules:\n"
-    "- Output MUST be valid JSON\n"
-    "- Do NOT include text outside JSON\n"
-    "- price must be numeric only (no ₹, commas)\n"
-    "- If no price found, return: {\"items\": []}"
-)
+                "You are an AI that extracts structured data.\n\n"
+                "From this image, extract ALL visible products/items with their quantities.\n\n"
+                "Return ONLY valid JSON in this EXACT format:\n\n"
+                "{\n"
+                '  "items": [\n'
+                "    {\n"
+                '      "item_name": "string",\n'
+                '      "quantity": number,\n'
+                '      "unit": "string"\n'
+                "    }\n"
+                "  ]\n"
+                "}\n\n"
+                "Rules:\n"
+                "- Output MUST be valid JSON\n"
+                "- Do NOT include text outside JSON\n"
+                "- quantity must be numeric only (e.g. 2, 3.5)\n"
+                "- unit should be the measurement unit (e.g. bottles, packs, pieces, kg)\n"
+                '- If nothing found, return: {"items": []}'
+            )
 
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -92,16 +86,13 @@ class PriceExtractor:
                 response_format={
                     "type": "json_schema",
                     "json_schema": {
-                        "name": "PriceResponse",
-                        "schema": PriceResponse.model_json_schema(),
+                        "name": "QuantityResponse",
+                        "schema": QuantityResponse.model_json_schema(),
                     },
                 },
             )
 
             content = response.choices[0].message.content
-            # print("\n===== RAW MODEL OUTPUT =====")
-            # print(content)
-            # print("================================\n")
 
             if content is None:
                 logger.warning("Empty response from model")
@@ -109,13 +100,8 @@ class PriceExtractor:
 
             # 🔹 Safe parsing
             try:
-                # parsed = PriceResponse.model_validate_json(content)
-                # return parsed.items
                 data = json.loads(content)
-                for item in data.get("items", []):
-                    if isinstance(item.get("price"), str):
-                        item["price"] = clean_price(item["price"])
-                parsed = PriceResponse(**data)
+                parsed = QuantityResponse(**data)
                 return parsed.items
 
             except ValidationError as ve:
@@ -123,5 +109,5 @@ class PriceExtractor:
                 return None
 
         except Exception as e:
-            logger.error(f"Error extracting price from {image_path}: {e}")
+            logger.error(f"Error extracting quantity from {image_path}: {e}")
             return None
